@@ -36,6 +36,11 @@ that should setup everything you need to get started with SISR quickly
     - Enable Steam CEF remote debugging
     - Create Desktop and Start Menu shortcuts
 
+    !!! info "Windows on ARM"
+        On Windows on ARM (e.g. Snapdragon devices) the script installs the **x64** build of SISR,
+        which Windows 11 runs transparently under x64 emulation, and the native **ARM64** USBIP-Win2 driver.  
+        See [Windows on ARM](#-windows-on-arm) for details.
+
     !!! tip "Version-Specific Installation"
         The install scripts are version-aware based on where you download them from:
 
@@ -138,6 +143,8 @@ that should setup everything you need to get started with SISR quickly
 
     A permanent location is important as SISR creates a marker shortcut in Steam that points to it's location
 
+    On Windows on ARM, download the **x64** (`windows_x64`) archive, see [Windows on ARM](#-windows-on-arm)
+
 === "Linux"
 
     Download the AppImage for your architecture from the [Downloads](../downloads/index.md) page
@@ -177,6 +184,18 @@ Continue to [Post-Installation](#i-post-installation)
       - Set the shortcut's launch options to `--marker`
 
 4. Start/Restart SISR.
+
+### 💪 Windows on ARM
+
+Steam for Windows is an x64 application, on Windows on ARM it runs under x64 emulation.  
+SISR gets access to Steam Input by loading Steam's `GameOverlayRenderer64.dll` into its own process.  
+That DLL is x64-only and Windows cannot load x64 DLLs into native ARM64 processes,
+so SISR **must** run as an x64 process as well.
+
+- Use the **`windows_x64`** build of SISR (Windows 11 runs it under x64 emulation).  
+  A native ARM64 build of SISR will not receive any Steam Input controllers.
+- Install the **ARM64** build of [usbip-win2](https://github.com/vadimgrn/usbip-win2/releases) (`USBip-<version>-ARM64.exe`, v0.9.7.8 or newer).  
+  Kernel drivers cannot be emulated, so the x64 driver installer will not work.
 
 ## ℹ️ Post-Installation
 

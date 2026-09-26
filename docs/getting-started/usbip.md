@@ -9,6 +9,10 @@
 
     Be sure to grab the **latest** version!
 
+    !!! info "Windows on ARM"
+        Use the **ARM64** installer (`USBip-<version>-ARM64.exe`, v0.9.7.8 or newer).  
+        Kernel mode drivers can not run under emulation, so the x64 installer will not work on ARM devices.
+
 === "🐧 Linux"
 
     ### 🏹 Arch Linux
