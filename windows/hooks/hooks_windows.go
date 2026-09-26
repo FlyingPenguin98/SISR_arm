@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"golang.org/x/sys/windows"
+	"github.com/Alia5/SISR/helper"
 )
 
 var (
@@ -35,16 +35,6 @@ type peSection struct {
 	rawSize        uint32
 }
 
-const imageFileMachineARM64 = 0xAA64
-
-var emulatedOnARM64 = sync.OnceValue(func() bool {
-	var processMachine, nativeMachine uint16
-	if err := windows.IsWow64Process2(windows.CurrentProcess(), &processMachine, &nativeMachine); err != nil {
-		return false
-	}
-	return nativeMachine == imageFileMachineARM64
-})
-
 // Supported reports whether hook detection/removal can work in this process.
 //
 // On Windows on ARM, system DLLs are ARM64X binaries whose export table is
@@ -52,7 +42,7 @@ var emulatedOnARM64 = sync.OnceValue(func() bool {
 // not match the code x64 callers execute. Restoring it corrupts the export
 // and crashes on the next call.
 func Supported() bool {
-	return !emulatedOnARM64()
+	return !helper.RunningOnARM64Windows()
 }
 
 var (

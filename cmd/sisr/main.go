@@ -25,6 +25,8 @@ func main() {
 		kong.Name("SISR"),
 		kong.Description(meta.Description()),
 		kong.UsageOnError(),
+		// Registered before the config file loaders so config files still win.
+		kong.Resolvers(platformDefaults()),
 		kong.Configuration(kong.JSON, jsonPaths...),
 		kong.Configuration(kongyaml.Loader, yamlPaths...),
 		kong.Configuration(kongtoml.Loader, tomlPaths...),

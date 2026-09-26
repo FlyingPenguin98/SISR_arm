@@ -199,6 +199,8 @@ so SISR **must** run as an x64 process as well.
 - Reboot after installing the USBIP driver (the install script does not reboot for you).
 - SISR does not remove Steam's HID hooks from its own process on Windows on ARM
   (the log shows `Skipping Steam HID unhooking`), as this is not possible under x64 emulation.
+- The transparent fullscreen overlay does not work under x64 emulation (it shows a black screen),
+  so SISR defaults to `--window.fullscreen=false` on Windows on ARM. The Steam overlay is not available in this mode.
 
 ## ℹ️ Post-Installation
 
