@@ -201,8 +201,11 @@ try {
                 Write-Host "  Downloading usbip-win2 ARM64 installer..." -ForegroundColor Cyan
                 Invoke-WebRequest -Uri $usbipArm64Url -OutFile $usbipInstaller -ErrorAction Stop
                 Write-Host "Installing USBIP drivers (UAC prompt will appear)..." -ForegroundColor Yellow
-                Start-Process -FilePath $usbipInstaller -ArgumentList "/S" -Verb RunAs -Wait
+                # usbip-win2 uses Inno Setup: install silently and never reboot mid-script,
+                # otherwise the remaining steps (shortcuts, uninstall entry) are skipped.
+                Start-Process -FilePath $usbipInstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Verb RunAs -Wait
                 Write-Host "USBIP ARM64 drivers installed successfully" -ForegroundColor Green
+                Write-Host "Note: A reboot may be required before the USBIP driver is usable. Reboot after this script has finished." -ForegroundColor Yellow
             }
             catch {
                 Write-Host "Warning: Failed to install USBIP ARM64 drivers - $($_.Exception.Message)" -ForegroundColor Yellow
@@ -229,6 +232,24 @@ try {
         Write-Host "See: https://alia5.github.io/VIIPER/stable/getting-started/installation/" -ForegroundColor Yellow
     }
     
+    # VIIPER runs usbip.exe to attach devices, but the usbip-win2 installer
+    # does not always put its install folder on PATH.
+    $usbipDir = Join-Path $env:ProgramFiles "USBip"
+    if ((Test-Path (Join-Path $usbipDir "usbip.exe")) -and -not (Get-Command usbip -ErrorAction SilentlyContinue)) {
+        try {
+            $userPathKey = "$userHKCU\Environment"
+            $userPath = [string](Get-ItemProperty -Path $userPathKey -Name "Path" -ErrorAction SilentlyContinue).Path
+            if (($userPath -split ';') -notcontains $usbipDir) {
+                $newUserPath = (($userPath.TrimEnd(';'), $usbipDir) | Where-Object { $_ }) -join ';'
+                Set-ItemProperty -Path $userPathKey -Name "Path" -Value $newUserPath -Type ExpandString
+                Write-Host "Added $usbipDir to PATH (restart Steam for it to take effect)" -ForegroundColor Green
+            }
+        }
+        catch {
+            Write-Host "Warning: Could not add $usbipDir to PATH - $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+
     Write-Host ""
     Write-Host "Configuring Steam CEF remote debugging..."
     

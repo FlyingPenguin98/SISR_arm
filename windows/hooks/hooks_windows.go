@@ -10,6 +10,8 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
+
+	"github.com/Alia5/SISR/helper"
 )
 
 var (
@@ -31,6 +33,16 @@ type peSection struct {
 	virtualSize    uint32
 	rawPointer     uint32
 	rawSize        uint32
+}
+
+// Supported reports whether hook detection/removal can work in this process.
+//
+// On Windows on ARM, system DLLs are ARM64X binaries whose export table is
+// swapped in memory for emulated x64 processes, so the on-disk baseline does
+// not match the code x64 callers execute. Restoring it corrupts the export
+// and crashes on the next call.
+func Supported() bool {
+	return !helper.RunningOnARM64Windows()
 }
 
 var (
@@ -73,6 +85,9 @@ func EnumerateExports(dllName string) map[string][16]byte {
 // DetectHooks returns names of exports in dllName whose in-memory first 16 bytes
 // differ from the on-disk baseline.
 func DetectHooks(dllName string) []string {
+	if !Supported() {
+		return nil
+	}
 	baseline := EnumerateExports(dllName)
 	if len(baseline) == 0 {
 		return nil
@@ -141,6 +156,9 @@ func IsJmp(addr uintptr) bool {
 // RestoreBaseline overwrites addr with baseline bytes, temporarily granting
 // PAGE_EXECUTE_READWRITE via VirtualProtect.
 func RestoreBaseline(addr uintptr, baseline [16]byte) error {
+	if !Supported() {
+		return ErrNotSupported
+	}
 	var oldProtect uint32
 	ret, _, callErr := procVirtualProtect.Call(
 		addr,
@@ -168,6 +186,9 @@ func RestoreBaseline(addr uintptr, baseline [16]byte) error {
 // Unhook checks whether exportName in dllName carries a JMP hook and,
 // if so, restores the on-disk baseline bytes. Returns true when unhooked.
 func Unhook(dllName, exportName string) bool {
+	if !Supported() {
+		return false
+	}
 	addr, ok := ExportAddr(dllName, exportName)
 	if !ok {
 		slog.Error("export not found", "dll", dllName, "export", exportName)

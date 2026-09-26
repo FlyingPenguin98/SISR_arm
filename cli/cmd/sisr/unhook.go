@@ -24,6 +24,10 @@ var toUnhookFNs = []string{
 
 func UnhookSteamHid() {
 	if runtime.GOOS == "windows" {
+		if !hooks.Supported() {
+			slog.Warn("Skipping Steam HID unhooking: not supported for x64 emulation on Windows on ARM")
+			return
+		}
 		hookedFns := hooks.DetectHooks("hid.dll")
 		if len(hookedFns) > 0 {
 			slog.Info("Detected HID hooks")

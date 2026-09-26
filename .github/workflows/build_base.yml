@@ -105,8 +105,15 @@ jobs:
               if: matrix.target.os == 'windows-latest'
               shell: pwsh
               run: |
-                  winget install -e --id MartinStorsjo.LLVM-MinGW.UCRT --accept-package-agreements --accept-source-agreements
-                  winget install -e --id Kitware.CMake --accept-package-agreements --accept-source-agreements
+                  foreach ($id in @("MartinStorsjo.LLVM-MinGW.UCRT", "Kitware.CMake")) {
+                      winget install -e --id $id --accept-package-agreements --accept-source-agreements
+                      # 0x8A15002B (-1978335189): already installed, no applicable upgrade
+                      if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) {
+                          Write-Error "winget install $id failed with exit code $LASTEXITCODE"
+                          exit $LASTEXITCODE
+                      }
+                  }
+                  exit 0
 
             - name: Setup just
               uses: extractions/setup-just@v3

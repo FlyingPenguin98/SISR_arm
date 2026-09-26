@@ -134,7 +134,7 @@ Shows window on startup; when used with fullscreen enabled, this will enable Ste
 
 Create a transparent, borderless, always-on-top overlay window
 
-- Default: `true`
+- Default: `true` (`false` on Windows on ARM)
 - Env var: `SISR_FULLSCREEN`
 
 #### `--window.max-fps <FPS>`

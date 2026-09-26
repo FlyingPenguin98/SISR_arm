@@ -2,6 +2,8 @@
 
 package hooks
 
+func Supported() bool { return false }
+
 func EnumerateExports(dllName string) map[string][16]byte { return map[string][16]byte{} }
 
 func DetectHooks(dllName string) []string { return nil }
