@@ -201,8 +201,11 @@ try {
                 Write-Host "  Downloading usbip-win2 ARM64 installer..." -ForegroundColor Cyan
                 Invoke-WebRequest -Uri $usbipArm64Url -OutFile $usbipInstaller -ErrorAction Stop
                 Write-Host "Installing USBIP drivers (UAC prompt will appear)..." -ForegroundColor Yellow
-                Start-Process -FilePath $usbipInstaller -ArgumentList "/S" -Verb RunAs -Wait
+                # usbip-win2 uses Inno Setup: install silently and never reboot mid-script,
+                # otherwise the remaining steps (shortcuts, uninstall entry) are skipped.
+                Start-Process -FilePath $usbipInstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Verb RunAs -Wait
                 Write-Host "USBIP ARM64 drivers installed successfully" -ForegroundColor Green
+                Write-Host "Note: A reboot may be required before the USBIP driver is usable. Reboot after this script has finished." -ForegroundColor Yellow
             }
             catch {
                 Write-Host "Warning: Failed to install USBIP ARM64 drivers - $($_.Exception.Message)" -ForegroundColor Yellow
