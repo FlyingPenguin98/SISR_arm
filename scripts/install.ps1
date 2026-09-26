@@ -42,11 +42,19 @@ else {
 }
 
 $buildType = if ($version -match "snapshot") { "Snapshot" } else { "Release" }
-$targetName = if ($arch -eq "x86_64") { "windows_x64" } else { "windows_arm64" }
+# Steam on Windows on ARM is an x64 application (running under emulation).
+# SISR must load Steam's x64 GameOverlayRenderer64.dll into its own process,
+# which is impossible from a native ARM64 process, so ARM64 devices use the
+# x64 build of SISR as well (Windows 11 runs it transparently via emulation).
+$targetName = "windows_x64"
+$assetArch = "x86_64"
+if ($arch -eq "aarch64") {
+    Write-Host "Windows on ARM detected: installing the x64 build of SISR (runs under x64 emulation, required for Steam Input)" -ForegroundColor Yellow
+}
 $assetNameCandidates = @(
     "SISR-$targetName-$buildType.zip",
     "SISR-$targetName.zip",
-    "SISR-$arch-windows-msvc-$buildType.zip"
+    "SISR-$assetArch-windows-msvc-$buildType.zip"
 )
 
 Write-Host "Architecture: $arch"
@@ -161,6 +169,48 @@ try {
         Write-Host "Warning: Could not download uninstall script" -ForegroundColor Yellow
     }
     
+    if ($arch -eq "aarch64") {
+        # Kernel drivers cannot run under emulation, so ARM64 needs the native
+        # ARM64 usbip-win2 driver. The VIIPER install script only knows about
+        # the x64 installer; installing a new enough ARM64 driver first makes it
+        # skip its own driver installation.
+        Write-Host ""
+        Write-Host "Checking USBIP drivers (ARM64)..." -ForegroundColor Cyan
+        $usbipArm64Version = [Version]"0.9.7.8"
+        $usbipInstalledVersion = $null
+        $usbipEntry = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -like 'USBip version*' } |
+            Select-Object -First 1
+        if ($usbipEntry) {
+            try { $usbipInstalledVersion = [Version]$usbipEntry.DisplayVersion } catch { }
+        }
+        if (-not $usbipInstalledVersion) {
+            $driverPath = Join-Path $env:SystemRoot "System32\drivers\usbip2_ude.sys"
+            if (Test-Path $driverPath) {
+                try { $usbipInstalledVersion = [Version](Get-Item $driverPath).VersionInfo.FileVersion } catch { }
+            }
+        }
+
+        if ($usbipInstalledVersion -and $usbipInstalledVersion -ge $usbipArm64Version) {
+            Write-Host "USBIP drivers already installed (version: $usbipInstalledVersion)" -ForegroundColor Green
+        }
+        else {
+            $usbipArm64Url = "https://github.com/vadimgrn/usbip-win2/releases/download/v.$usbipArm64Version/USBip-$usbipArm64Version-ARM64.exe"
+            $usbipInstaller = Join-Path $tempDir "USBip-setup-ARM64.exe"
+            try {
+                Write-Host "  Downloading usbip-win2 ARM64 installer..." -ForegroundColor Cyan
+                Invoke-WebRequest -Uri $usbipArm64Url -OutFile $usbipInstaller -ErrorAction Stop
+                Write-Host "Installing USBIP drivers (UAC prompt will appear)..." -ForegroundColor Yellow
+                Start-Process -FilePath $usbipInstaller -ArgumentList "/S" -Verb RunAs -Wait
+                Write-Host "USBIP ARM64 drivers installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Warning: Failed to install USBIP ARM64 drivers - $($_.Exception.Message)" -ForegroundColor Yellow
+                Write-Host "Install the ARM64 build manually from: https://github.com/vadimgrn/usbip-win2/releases" -ForegroundColor Yellow
+            }
+        }
+    }
+
     Write-Host ""
     Write-Host "Installing VIIPER version: $viiperVersion"
     $viiperInstallVersion = $viiperVersion -replace '^v', ''

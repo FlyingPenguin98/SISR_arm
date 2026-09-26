@@ -29,6 +29,9 @@ func LoadOverlay(steamDir string) error {
 	var overlayPath string
 	switch runtime.GOOS {
 	case "windows":
+		if runtime.GOARCH != "amd64" {
+			return ErrOverlayUnsupportedArch
+		}
 		overlayPath = path.Join(steamDir, "GameOverlayRenderer64.dll")
 	case "linux":
 		parentDir := path.Dir(steamDir)

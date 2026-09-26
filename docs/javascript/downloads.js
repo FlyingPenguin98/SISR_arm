@@ -75,6 +75,9 @@
             else if (ua.includes("x86_64") || ua.includes("win64") || ua.includes("x64") || ua.includes("amd64")) arch = "x64";
         }
 
+        // SISR must run as x64 on Windows on ARM (Steam's overlay DLL is x64-only)
+        if (platform === "windows" && arch === "arm64") arch = "x64";
+
         return { platform, arch };
     }
 
