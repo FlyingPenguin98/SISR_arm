@@ -232,6 +232,24 @@ try {
         Write-Host "See: https://alia5.github.io/VIIPER/stable/getting-started/installation/" -ForegroundColor Yellow
     }
     
+    # VIIPER runs usbip.exe to attach devices, but the usbip-win2 installer
+    # does not always put its install folder on PATH.
+    $usbipDir = Join-Path $env:ProgramFiles "USBip"
+    if ((Test-Path (Join-Path $usbipDir "usbip.exe")) -and -not (Get-Command usbip -ErrorAction SilentlyContinue)) {
+        try {
+            $userPathKey = "$userHKCU\Environment"
+            $userPath = [string](Get-ItemProperty -Path $userPathKey -Name "Path" -ErrorAction SilentlyContinue).Path
+            if (($userPath -split ';') -notcontains $usbipDir) {
+                $newUserPath = (($userPath.TrimEnd(';'), $usbipDir) | Where-Object { $_ }) -join ';'
+                Set-ItemProperty -Path $userPathKey -Name "Path" -Value $newUserPath -Type ExpandString
+                Write-Host "Added $usbipDir to PATH (restart Steam for it to take effect)" -ForegroundColor Green
+            }
+        }
+        catch {
+            Write-Host "Warning: Could not add $usbipDir to PATH - $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+
     Write-Host ""
     Write-Host "Configuring Steam CEF remote debugging..."
     
