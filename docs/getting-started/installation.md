@@ -196,6 +196,9 @@ so SISR **must** run as an x64 process as well.
   A native ARM64 build of SISR will not receive any Steam Input controllers.
 - Install the **ARM64** build of [usbip-win2](https://github.com/vadimgrn/usbip-win2/releases) (`USBip-<version>-ARM64.exe`, v0.9.7.8 or newer).  
   Kernel drivers cannot be emulated, so the x64 driver installer will not work.
+- Reboot after installing the USBIP driver (the install script does not reboot for you).
+- SISR does not remove Steam's HID hooks from its own process on Windows on ARM
+  (the log shows `Skipping Steam HID unhooking`), as this is not possible under x64 emulation.
 
 ## ℹ️ Post-Installation
 
